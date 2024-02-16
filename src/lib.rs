@@ -527,7 +527,8 @@ mod tests {
         let a = Atomic::new(0i128);
         assert_eq!(
             Atomic::<i128>::is_lock_free(),
-            cfg!(feature = "nightly") & cfg!(target_has_atomic = "128")
+            cfg!(any(feature = "nightly", feature = "portable-atomic"))
+                & cfg!(target_has_atomic = "128")
         );
         assert_eq!(format!("{:?}", a), "Atomic(0)");
         assert_eq!(a.load(SeqCst), 0);
@@ -658,7 +659,8 @@ mod tests {
         let a = Atomic::new(0u128);
         assert_eq!(
             Atomic::<u128>::is_lock_free(),
-            cfg!(feature = "nightly") & cfg!(target_has_atomic = "128")
+            cfg!(any(feature = "nightly", feature = "portable-atomic"))
+                & cfg!(target_has_atomic = "128")
         );
         assert_eq!(format!("{:?}", a), "Atomic(0)");
         assert_eq!(a.load(SeqCst), 0);

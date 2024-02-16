@@ -7,9 +7,12 @@ A Rust library which provides a generic `Atomic<T>` type for all `T: NoUninit` t
 
 This library will use native atomic instructions if possible, and will otherwise fall back to a lock-based mechanism. You can use the `Atomic::<T>::is_lock_free()` function to check whether native atomic operations are supported for a given type. Note that a type must have a power-of-2 size and alignment in order to be used by native atomic instructions.
 
+Since 128-bit atomics are not yet stabilized, you can either use `nightly` feature or use `portable-atomic` feature to enable underlying atomics from [portable-atomic] crate.
+
 This crate uses `#![no_std]` and only depends on libcore.
 
 [bytemuck]: https://docs.rs/bytemuck
+[portable-atomic]: https://docs.rs/portable-atomic
 
 [Documentation](https://docs.rs/atomic)
 

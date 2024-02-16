@@ -7,44 +7,52 @@
 
 use bytemuck::NoUninit;
 
+#[cfg(not(feature = "portable-atomic"))]
+use core::sync::atomic as atomic_base;
+#[cfg(feature = "portable-atomic")]
+use portable_atomic as atomic_base;
+
 #[cfg(feature = "fallback")]
 use crate::fallback;
+use atomic_base::Ordering;
 use core::cmp;
 use core::mem;
 use core::num::Wrapping;
 use core::ops;
-use core::sync::atomic::Ordering;
 
 macro_rules! match_atomic {
     ($type:ident, $atomic:ident, $impl:expr, $fallback_impl:expr) => {
         match mem::size_of::<$type>() {
             #[cfg(target_has_atomic = "8")]
             1 if mem::align_of::<$type>() >= 1 => {
-                type $atomic = core::sync::atomic::AtomicU8;
+                type $atomic = atomic_base::AtomicU8;
 
                 $impl
             }
             #[cfg(target_has_atomic = "16")]
             2 if mem::align_of::<$type>() >= 2 => {
-                type $atomic = core::sync::atomic::AtomicU16;
+                type $atomic = atomic_base::AtomicU16;
 
                 $impl
             }
             #[cfg(target_has_atomic = "32")]
             4 if mem::align_of::<$type>() >= 4 => {
-                type $atomic = core::sync::atomic::AtomicU32;
+                type $atomic = atomic_base::AtomicU32;
 
                 $impl
             }
             #[cfg(target_has_atomic = "64")]
             8 if mem::align_of::<$type>() >= 8 => {
-                type $atomic = core::sync::atomic::AtomicU64;
+                type $atomic = atomic_base::AtomicU64;
 
                 $impl
             }
-            #[cfg(all(feature = "nightly", target_has_atomic = "128"))]
+            #[cfg(all(
+                any(feature = "nightly", feature = "portable-atomic"),
+                target_has_atomic = "128"
+            ))]
             16 if mem::align_of::<$type>() >= 16 => {
-                type $atomic = core::sync::atomic::AtomicU128;
+                type $atomic = atomic_base::AtomicU128;
 
                 $impl
             }
@@ -61,31 +69,34 @@ macro_rules! match_signed_atomic {
         match mem::size_of::<$type>() {
             #[cfg(target_has_atomic = "8")]
             1 if mem::align_of::<$type>() >= 1 => {
-                type $atomic = core::sync::atomic::AtomicI8;
+                type $atomic = atomic_base::AtomicI8;
 
                 $impl
             }
             #[cfg(target_has_atomic = "16")]
             2 if mem::align_of::<$type>() >= 2 => {
-                type $atomic = core::sync::atomic::AtomicI16;
+                type $atomic = atomic_base::AtomicI16;
 
                 $impl
             }
             #[cfg(target_has_atomic = "32")]
             4 if mem::align_of::<$type>() >= 4 => {
-                type $atomic = core::sync::atomic::AtomicI32;
+                type $atomic = atomic_base::AtomicI32;
 
                 $impl
             }
             #[cfg(target_has_atomic = "64")]
             8 if mem::align_of::<$type>() >= 8 => {
-                type $atomic = core::sync::atomic::AtomicI64;
+                type $atomic = atomic_base::AtomicI64;
 
                 $impl
             }
-            #[cfg(all(feature = "nightly", target_has_atomic = "128"))]
+            #[cfg(all(
+                any(feature = "nightly", feature = "portable-atomic"),
+                target_has_atomic = "128"
+            ))]
             16 if mem::align_of::<$type>() >= 16 => {
-                type $atomic = core::sync::atomic::AtomicI128;
+                type $atomic = atomic_base::AtomicI128;
 
                 $impl
             }
@@ -106,9 +117,10 @@ pub const fn atomic_is_lock_free<T>() -> bool {
         | (cfg!(target_has_atomic = "16") & (size == 2) & (align >= 2))
         | (cfg!(target_has_atomic = "32") & (size == 4) & (align >= 4))
         | (cfg!(target_has_atomic = "64") & (size == 8) & (align >= 8))
-        | (cfg!(feature = "nightly")
-            & cfg!(target_has_atomic = "128")
-            & (size == 16)
+        | (cfg!(all(
+            any(feature = "nightly", feature = "portable-atomic"),
+            target_has_atomic = "128"
+        )) & (size == 16)
             & (align >= 16))
 }
 
